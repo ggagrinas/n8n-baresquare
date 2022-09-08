@@ -9,7 +9,8 @@ import {
 		IHttpRequestOptions,
 		INodeExecutionData,
 		INodeType,
-		INodeTypeDescription
+		INodeTypeDescription,
+		NodeOperationError,
 } from 'n8n-workflow';
 
 import {
@@ -41,206 +42,171 @@ export class Baresquare implements INodeType {
 				polling:true,
 				properties: [
 						{
-							displayName: 'Ticket',
-							name: 'ticket',
+							displayName: 'Get data',
+							name: 'getData',
 							type: 'options',
 							options: [
 								{
-									name: 'New Ticket Created',
-									value: 'newTicketCreated',
+									name: 'New Tickets',
+									value: 'newTicketsCreated',
+								},
+								{
+									name:'Last X Tickets',
+									value: 'lastTickets'
 								},
 							],
 							required: true,
-							default: 'newTicketCreated',
+							default: 'newTicketsCreated',
 							description: 'If new ticket created triggers workflow',
 						},
-						// {
-						// 	displayName: 'Resource',
-						// 	name: 'resource',
-						// 	type: 'options',
-						// 	options: [
-						// 		{
-						// 			name: 'Contact',
-						// 			value: 'contact',
-						// 		},
-						// 	],
-						// 	default: 'contact',
-						// 	required: true,
-						// 	description: 'Resource to consume',
-						// },
-						// {
-						// 	displayName: 'Operation',
-						// 	name: 'operation',
-						// 	type: 'options',
-						// 	displayOptions: {
-						// 		show: {
-						// 			resource: [
-						// 				'contact',
-						// 			],
-						// 		},
-						// 	},
-						// 	options: [
-						// 		{
-						// 			name: 'Create',
-						// 			value: 'create',
-						// 			description: 'Create a contact',
-						// 		},
-						// 	],
-						// 	default: 'create',
-						// 	description: 'The operation to perform.',
-						// },					
+						{
+							displayName: 'Ticket limit',
+							name: 'limit',
+							type: 'number',
+							typeOptions:{
+								maxValue:500,
+								minValue:0,
+							},
+							default: '30',
+							required: true,
+							description: 'How many tickets are returned',
+						}									
 					],
 		};
 
-
-	// 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-	// 		let responseData;
-	// 		// const resource = this.getNodeParameter('resource', 0) as string;
-	// 		// const operation = this.getNodeParameter('operation', 0) as string;
-	// 		const ticket = this.getNodeParameter('ticket',0) as string;
-	// 		//Get credentials the user provided for this node
-	// 		const credentials = await this.getCredentials('baresquareApi') as IDataObject;
-	// 		console.log("Execute function is running!");
-	// 		if (ticket === 'newTicketCreated'){
-	// 						// get email input
-	// 						// const email = this.getNodeParameter('email', 0) as string;
-	// 						// get additional fields input
-	// 						// const additionalFields = this.getNodeParameter('additionalFields', 0) as IDataObject;
-	// 						// const data: IDataObject = {
-	// 						// 		email,
-	// 						// };
-	
-	// 						// Object.assign(data, additionalFields);
-	
-	// 						const options: OptionsWithUri = {
-	// 								headers: {
-	// 										'Accept': 'application/json',
-	// 										'Authorization': `Bearer ${credentials.apiKey}`,
-	// 								},
-	// 								method: 'GET',
-	// 								uri: `https://pre-prod.use.baresquare.com/api/p/v2/incidents`,
-	// 								json: true,
-	// 						};
-
-	// 						console.log("before request");
-	// 						responseData = await this.helpers.request(options);
-	// 						responseData = responseData.results;
-	// 						console.log("after request");
-					
-					
-	// 		}
-
-	// 		const new_items = [];
-			
-	// 		const data = this.getWorkflowStaticData("node");
-
-	// 		data.ids = data.ids || [];
-			
-	// 		const items =this.helpers.returnJsonArray(responseData);
-	// 		// console.log(responseData[0])
-	// 		const dataIDsTemp = data.ids.toString();
-	// 		// console.log(dataIDsTemp.includes(responseData[0].id))
-	// 		console.log(dataIDsTemp);
-
-	// 		for (let i = items.length - 1; i >= 0; i--) {
-
-	// 			// Check if data is already present
-	// 			if (dataIDsTemp.includes(responseData[i].id)) {
-	// 				break;
-	// 			} else {
-			
-	// 				// if new data then add it to an array
-	// 				new_items.push({
-	// 					json: {
-	// 						id: items[i].json.id,
-	// 						name: items[i].json.account_id,
-	// 						email: items[i].json.author_email_address
-	// 					},
-	// 				});
-	// 			}
-	// 		}
-
-	// 		data.ids = items.map((item) => item.json.id);
-
-	// 		return [this.helpers.returnJsonArray(new_items)];
-	// }
-
 	async poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
 		let responseData;
-		// const resource = this.getNodeParameter('resource', 0) as string;
-		// const operation = this.getNodeParameter('operation', 0) as string;
-		const ticket = this.getNodeParameter('ticket',0) as string;
+		const getData = this.getNodeParameter('getData','newTicketsCreated') as string;
+		const ticketLimit = this.getNodeParameter('limit',30) as string;
+
 		//Get credentials the user provided for this node
 		const credentials = await this.getCredentials('baresquareApi') as IDataObject;
-		if (ticket === 'newTicketCreated'){
-						// get email input
-						// const email = this.getNodeParameter('email', 0) as string;
-						// get additional fields input
-						// const additionalFields = this.getNodeParameter('additionalFields', 0) as IDataObject;
-						// const data: IDataObject = {
-						// 		email,
-						// };
 
-						// Object.assign(data, additionalFields);
+		const yesterday = moment().subtract(1,'days').toDate().toISOString().slice(0,10);
 
-						const options: OptionsWithUri = {
-								headers: {
-										'Accept': 'application/json',
-										'Authorization': `Bearer ${credentials.apiKey}`,
-								},
-								method: 'GET',
-								uri: `https://pre-prod.use.baresquare.com/api/p/v2/incidents`,
-								json: true,
-						};
+		const options: OptionsWithUri = {
+			headers: {
+					'Accept': 'appliceation/json',
+					'Authorization': `Bearer ${credentials.apiKey}`,
+			},
+			qs: {
+				from: yesterday,
+				limit: ticketLimit,
+			},
+			method: 'GET',
+			uri: `https://pre-prod.use.baresquare.com/api/p/v2/incidents`,
+			json: true,
+			
+		};
 
-						responseData = await this.helpers.request(options);
-						responseData = responseData.results;
-				
-		}
+		responseData = await this.helpers.request(options);
+		responseData = responseData.results;
 
-		// Deduplication here
-		const new_items = [];
+		if (getData === 'newTicketsCreated'){
+			const data = this.getWorkflowStaticData("node");
+
+			// time management 
+			const qs: IDataObject = {};
+			qs.start_date = data.lastTimeChecked;
+			qs.end_date = moment().format();
+			console.log("last time checked!")
+			console.log(data.lastTimeChecked)
+			data.lastTimeChecked = qs.end_date;
+			// time management 
+
+
+			// Deduplication here
+			const new_items = [];
 		
-		const data = this.getWorkflowStaticData("node");
+			data.ids = data.ids || [];
+			
+			const items =this.helpers.returnJsonArray(responseData);
 
+			const dataIDsTemp = data.ids.toString();
 
-		// time management irelevant to deduplication
-		const qs: IDataObject = {};
-		qs.start_date = data.lastTimeChecked;
-		qs.end_date = moment().format();
-		console.log("last time checked!")
-		console.log(data.lastTimeChecked)
-		data.lastTimeChecked = qs.end_date;
-		// time management irelevant to deduplication
+			for (let i = items.length - 1; i >= 0; i--) {
 
-		data.ids = data.ids || [];
-		
-		const items =this.helpers.returnJsonArray(responseData);
-
-		const dataIDsTemp = data.ids.toString();
-
-		for (let i = items.length - 1; i >= 0; i--) {
-
-			// Check if data is already present
-			if (dataIDsTemp.includes(responseData[i].id)) {
-				break;
-			} else {
-		
-				// if new data then add it to an array
-				new_items.push({
-					json: {
-						id: items[i].json.id,
-						name: items[i].json.account_id,
-						email: items[i].json.author_email_address
-					},
-				});
+				// Check if data is already present
+				if (dataIDsTemp.includes(responseData[i].id)) {
+					break;
+				} else {
+			
+					// if new data then add it to an array
+					new_items.push({
+						json: {
+							"ID": items[i].json.id,
+							"Title": items[i].json.title,
+							"Impact Score": items[i].json.impact,
+							"Sentiment":items[i].json.sentiment,
+							"Incident date":items[i].json.incident_datetime,
+							"Description":items[i].json.description,
+							"Assignee email address":items[i].json.assigned_to,
+							"Priority":items[i].json.priority,
+							"Author email address":items[i].json.author_email_address,
+							"Granularity":items[i].json.granularity,
+							"Volume index value":items[i].json.volume_index,
+							"Deviation index value":items[i].json.deviation_index,
+							"Status":items[i].json.status,
+							"Creation date":items[i].json.created_at,
+							"Last updated":items[i].json.updated_at,
+							"Number of comments":items[i].json.comments_count,
+							"Archive status":items[i].json.archive,
+							"Ticket URL":items[i].json.ticket_url,
+						},
+					});
+				}
 			}
-		}
 
-		data.ids = items.map((item) => item.json.id);
-		if(new_items.length !==0){
-			console.log("found new tickets");
+			data.ids = items.map((item) => item.json.id);
+			
+			return [this.helpers.returnJsonArray(new_items)];
+		} else if (getData === 'lastTickets'){
+			const filteredData = responseData.map((data: any) =>(({
+				id,
+				title,
+				impact,
+				sentiment,
+				incident_datetime,
+				description,
+				assigned_to,
+				priority,
+				author_email_address,
+				granularity,
+				volume_index,
+				deviation_index,
+				status,
+				status_text,
+				created_at,
+				updated_at,
+				comments_count,
+				archive,
+				ticket_url
+			  }) => ({ 
+				"ID":id, 
+				"Title":title,
+				"Impact Score":impact,
+				"Sentiment":sentiment,
+				"Incident date":incident_datetime,
+				"Description":description,
+				"Assignee email address":assigned_to,
+				"Priority":priority,
+				"Author email adress":author_email_address,
+				"Granularity":granularity,
+				"Volume index value":volume_index,
+				"Deviation index value":deviation_index,
+				"Status":status,
+				"Creation date":created_at,
+				"Last updated": updated_at,
+				"Number of comments":comments_count,
+				"Archive status":archive,
+				"Ticket URL":ticket_url
+
+			}))(data));
+
+			return [this.helpers.returnJsonArray(filteredData)];
+		}else{
+			throw new NodeOperationError(this.getNode(), `The defined option "${getData}" is not supported`);
 		}
-		return [this.helpers.returnJsonArray(new_items)];
+		
 	}
 }
