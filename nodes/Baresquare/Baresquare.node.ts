@@ -90,7 +90,7 @@ export class Baresquare implements INodeType {
 					'Authorization': `Bearer ${credentials.apiKey}`,
 			},
 			qs: {
-				from: yesterday,
+				// from: yesterday,
 				limit: ticketLimit,
 			},
 			method: 'GET',
@@ -98,22 +98,15 @@ export class Baresquare implements INodeType {
 			json: true,
 			
 		};
-
-		responseData = await this.helpers.request(options);
+		try{
+			responseData = await this.helpers.request(options);
+		}catch(error){
+			throw new NodeOperationError(this.getNode(), `COuld not fetch data from API with following error:${error.message}`);
+		}
 		responseData = responseData.results;
 
 		if (getData === 'newTicketsCreated'){
 			const data = this.getWorkflowStaticData("node");
-
-			// time management 
-			const qs: IDataObject = {};
-			qs.start_date = data.lastTimeChecked;
-			qs.end_date = moment().format();
-			console.log("last time checked!")
-			console.log(data.lastTimeChecked)
-			data.lastTimeChecked = qs.end_date;
-			// time management 
-
 
 			// Deduplication here
 			const new_items = [];
@@ -130,7 +123,6 @@ export class Baresquare implements INodeType {
 				if (dataIDsTemp.includes(responseData[i].id)) {
 					break;
 				} else {
-			
 					// if new data then add it to an array
 					new_items.push({
 						"ID": items[i].json.id,
