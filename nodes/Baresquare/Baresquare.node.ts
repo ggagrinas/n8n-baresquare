@@ -90,7 +90,7 @@ export class Baresquare implements INodeType {
 					'Authorization': `Bearer ${credentials.apiKey}`,
 			},
 			qs: {
-				// from: yesterday,
+				from: yesterday,
 				limit: ticketLimit,
 			},
 			method: 'GET',
