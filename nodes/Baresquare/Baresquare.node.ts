@@ -29,7 +29,6 @@ export class Baresquare implements INodeType {
 				description: 'Consume Baresquare API',
 				defaults: {
 						name: 'Baresquare',
-						color: '#1A82e2',
 				},
 				inputs: ['main'],
 				outputs: ['main'],
@@ -42,7 +41,7 @@ export class Baresquare implements INodeType {
 				polling:true,
 				properties: [
 						{
-							displayName: 'Get data',
+							displayName: 'Get Data',
 							name: 'getData',
 							type: 'options',
 							options: [
@@ -64,12 +63,11 @@ export class Baresquare implements INodeType {
 							name: 'limit',
 							type: 'number',
 							typeOptions:{
-								maxValue:500,
-								minValue:0,
+								minValue: 1,
 							},
-							default: '30',
+							default: 50,
 							required: true,
-							description: 'How many tickets are returned',
+							description: 'Max number of results to return',
 						},									
 					],
 		};
