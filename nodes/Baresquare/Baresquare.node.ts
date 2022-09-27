@@ -31,7 +31,7 @@ export class Baresquare implements INodeType {
 						name: 'Baresquare',
 						color: '#1A82e2',
 				},
-				inputs: [],
+				inputs: ['main'],
 				outputs: ['main'],
 				credentials: [
 						{
@@ -52,7 +52,7 @@ export class Baresquare implements INodeType {
 								},
 								{
 									name:'Last X Tickets',
-									value: 'lastTickets'
+									value: 'lastTickets',
 								},
 							],
 							required: true,
@@ -60,7 +60,7 @@ export class Baresquare implements INodeType {
 							description: 'If new ticket created triggers workflow',
 						},
 						{
-							displayName: 'Ticket limit',
+							displayName: 'Ticket Limit',
 							name: 'limit',
 							type: 'number',
 							typeOptions:{
@@ -70,7 +70,7 @@ export class Baresquare implements INodeType {
 							default: '30',
 							required: true,
 							description: 'How many tickets are returned',
-						}									
+						},									
 					],
 		};
 
@@ -94,7 +94,7 @@ export class Baresquare implements INodeType {
 				limit: ticketLimit,
 			},
 			method: 'GET',
-			uri: `https://pre-prod.use.baresquare.com/api/p/v2/incidents`,
+			uri: `https://my.baresquare.com/api/p/v2/incidents`,
 			json: true,
 			
 		};
@@ -109,7 +109,7 @@ export class Baresquare implements INodeType {
 			const data = this.getWorkflowStaticData("node");
 
 			// Deduplication here
-			const new_items = [];
+			const newItems = [];
 		
 			data.ids = data.ids || [];
 			
@@ -124,7 +124,7 @@ export class Baresquare implements INodeType {
 					break;
 				} else {
 					// if new data then add it to an array
-					new_items.push({
+					newItems.push({
 						"ID": items[i].json.id,
 						"Title": items[i].json.title,
 						"Impact Score": items[i].json.impact,
@@ -149,7 +149,7 @@ export class Baresquare implements INodeType {
 
 			data.ids = items.map((item) => item.json.id);
 			
-			return [this.helpers.returnJsonArray(new_items)];
+			return [this.helpers.returnJsonArray(newItems)];
 		} else if (getData === 'lastTickets'){
 			const filteredData = responseData.map((data: any) =>(({
 				id,
@@ -170,8 +170,8 @@ export class Baresquare implements INodeType {
 				updated_at,
 				comments_count,
 				archive,
-				ticket_url
-			  }) => ({ 
+				ticket_url,
+			}) => ({ 
 				"ID":id, 
 				"Title":title,
 				"Impact Score":impact,
@@ -189,7 +189,7 @@ export class Baresquare implements INodeType {
 				"Last updated": updated_at,
 				"Number of comments":comments_count,
 				"Archive status":archive,
-				"Ticket URL":ticket_url
+				"Ticket URL":ticket_url,
 
 			}))(data));
 

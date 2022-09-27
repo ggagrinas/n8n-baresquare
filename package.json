@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-test",
+  "name": "n8n-nodes-baresquare",
   "version": "0.1.0",
   "description": "",
   "keywords": [
@@ -8,8 +8,8 @@
   "license": "MIT",
   "homepage": "",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "Georgios Gagrinas",
+    "email": "giorgos.gagrinas@baresquare.com"
   },
   "repository": {
     "type": "git",
@@ -30,14 +30,10 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/BaresquareApi.credentials.js",
-      "dist/credentials/ExampleCredentialsApi.credentials.js",
-      "dist/credentials/HttpBinApi.credentials.js"
+      "dist/credentials/BaresquareApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Baresquare/Baresquare.node.js",
-      "dist/nodes/ExampleNode/ExampleNode.node.js",
-      "dist/nodes/HttpBin/HttpBin.node.js"
+      "dist/nodes/Baresquare/Baresquare.node.js"
     ]
   },
   "devDependencies": {
